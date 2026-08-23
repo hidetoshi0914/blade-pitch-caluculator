@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ブレードピッチ計算ツール | Blade Pitch Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0b1620;
+    --bg-deep: #060d14;
+    --panel: #101f2c;
+    --panel-2: #142838;
+    --line: #24384a;
+    --line-soft: #1a2c3b;
+    --text: #e6edf3;
+    --text-dim: #8ca0b3;
+    --text-faint: #5c7186;
+    --brass: #c9974a;
+    --brass-dim: #8a6b3c;
+    --teal: #4fb3a6;
+    --teal-dim: #2c6a63;
+    --coral: #e0836b;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans JP', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #10222f 0%, transparent 60%),
+      radial-gradient(1000px 700px at 110% 10%, #0d1e2a 0%, transparent 55%),
+      var(--bg-deep);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:32px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:20px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .title-block .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--brass);
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  h1{
+    font-size:26px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  .subtitle{color:var(--text-dim);font-size:13px;margin-top:6px;}
+  .fixed-spec{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    text-align:right;
+    line-height:1.7;
+  }
+  .fixed-spec b{color:var(--brass);font-weight:600;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:340px 1fr;
+    gap:24px;
+  }
+  @media (max-width:860px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 22px;
+  }
+  .panel + .panel{margin-top:20px;}
+  .panel h2{
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin:0 0 16px;
+    font-weight:600;
+  }
+
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size:13px;
+    margin-bottom:8px;
+  }
+  .field-label .name{color:var(--text);}
+  .field-label .hint{color:var(--text-faint);font-size:11px;}
+  .value-readout{
+    font-family:var(--mono);
+    font-size:15px;
+    font-weight:600;
+    color:var(--teal);
+    min-width:64px;
+    text-align:right;
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    background:var(--line);
+    border-radius:2px;
+    outline:none;
+    margin:10px 0 6px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:var(--teal);
+    border:2px solid #0b1620;
+    cursor:pointer;
+    box-shadow:0 0 0 1px var(--teal-dim);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--teal);border:2px solid #0b1620;cursor:pointer;
+  }
+  .scale-labels{
+    display:flex;justify-content:space-between;
+    font-size:10px;color:var(--text-faint);font-family:var(--mono);
+  }
+  input[type=number]{
+    width:78px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:6px 8px;
+    border-radius:6px;
+  }
+  select{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13px;
+    padding:9px 10px;
+    border-radius:6px;
+    appearance:none;
+  }
+  .toggle-row{display:flex;gap:8px;}
+  .toggle-btn{
+    flex:1;
+    text-align:center;
+    padding:9px 6px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    font-size:12.5px;
+    color:var(--text-dim);
+    cursor:pointer;
+    background:var(--panel-2);
+    transition:all .15s ease;
+  }
+  .toggle-btn.active{
+    border-color:var(--brass);
+    color:var(--brass);
+    background:rgba(201,151,74,0.08);
+  }
+  .angle-inputs{display:flex;gap:12px;align-items:center;}
+  .angle-inputs label{font-size:12px;color:var(--text-dim);display:flex;flex-direction:column;gap:6px;}
+
+  /* readouts */
+  .readouts{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .read-card{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    border-radius:10px;
+    padding:16px 14px 14px;
+    position:relative;
+    overflow:hidden;
+  }
+  .read-card .pos-label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  .read-card .angle-label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--text-faint);
+    margin-top:2px;
+  }
+  .read-card .pitch-value{
+    font-family:var(--mono);
+    font-size:34px;
+    font-weight:700;
+    color:var(--text);
+    margin-top:10px;
+    line-height:1;
+  }
+  .read-card .pitch-value .deg{font-size:18px;color:var(--text-dim);font-weight:500;}
+  .read-card.catch{border-color:var(--teal-dim);}
+  .read-card.catch .pitch-value{color:var(--teal);}
+  .read-card.finish{border-color:#7a4a3d;}
+  .read-card.finish .pitch-value{color:var(--coral);}
+  .read-card .delta{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-faint);
+    margin-top:6px;
+  }
+
+  .diagram-panel svg{display:block;width:100%;height:auto;}
+  .diagram-caption{
+    font-size:11.5px;color:var(--text-faint);margin-top:10px;line-height:1.6;
+  }
+
+  .formula-box{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--text-dim);
+    background:var(--bg-deep);
+    border:1px solid var(--line-soft);
+    border-radius:8px;
+    padding:14px 16px;
+    line-height:1.9;
+  }
+  .formula-box .hl{color:var(--brass);}
+  .formula-box .hl2{color:var(--teal);}
+
+  footer{
+    margin-top:28px;
+    font-size:11.5px;
+    color:var(--text-faint);
+    line-height:1.8;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+  footer a{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Rigging / Pitch Geometry</div>
+      <h1>ブレードピッチ計算ツール</h1>
+      <div class="subtitle">ピンの内外傾・前後傾から、キャッチ／ミドル／フィニッシュのブレードピッチを算出</div>
+    </div>
+    <div class="fixed-spec" id="fixedSpecText">
+      オールロック固有角 <b>4.0°</b>／ブッシュ <b>4</b>（調整 <b>±0.0°</b>）<br>
+      実効ゲート角 K = <b>4.0°</b><br>
+      オールのねじれ・スリーブ摩耗 <b>考慮なし</b>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: INPUTS -->
+    <div>
+      <div class="panel">
+        <h2>基準ピッチ（K）の設定</h2>
+
+        <div class="field">
+          <div class="toggle-row">
+            <div class="toggle-btn active" data-mode="theory">理論値（固有角＋ブッシュ）</div>
+            <div class="toggle-btn" data-mode="measured">実測ミドルで校正</div>
+          </div>
+        </div>
+
+        <!-- THEORY MODE -->
+        <div id="theoryFields">
+          <div class="field">
+            <div class="angle-inputs">
+              <label>固有角
+                <input type="number" id="inherentAngle" value="4.0" step="0.1">
+              </label>
+              <label>ブッシュ番号
+                <input type="number" id="bushNumber" value="4" step="1">
+              </label>
+              <span style="font-size:12px;color:var(--text-dim);align-self:center;margin-left:2px;" id="bushAdjLabel">調整 +0.0°</span>
+            </div>
+            <div class="diagram-caption" style="margin-top:8px;">ブッシュ番号は1〜7が一般的（1=+3°側 … 4=±0° … 7=−3°側）。範囲外の値も入力可。K = 固有角 + (4 − ブッシュ番号)</div>
+          </div>
+        </div>
+
+        <!-- MEASURED MODE -->
+        <div id="measuredFields" style="display:none;">
+          <div class="field">
+            <div class="field-label"><span class="name">実測ミドルピッチ</span></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="number" id="measuredMid" value="4.0" step="0.1">
+              <span style="font-size:12px;color:var(--text-dim);">°（ピッチメーターでミドル位置で実測した値）</span>
+            </div>
+          </div>
+          <div class="diagram-caption" style="margin-bottom:10px;">下の「内外傾／前後傾」スライダーを、<b>実測した時点のピン設定</b>に合わせてから登録してください。登録後は自由にスライダーを動かして、そこからの変化を確認できます。</div>
+          <button id="registerBaseline" style="width:100%;padding:10px;border-radius:6px;border:1px solid var(--brass);background:rgba(201,151,74,0.1);color:var(--brass);font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:8px;">現在のスライダー値を基準として登録</button>
+          <div id="baselineSummary" class="diagram-caption" style="color:var(--text-dim);"></div>
+          <button id="clearBaseline" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--text-faint);font-family:var(--sans);font-size:12px;cursor:pointer;margin-top:8px;display:none;">基準をクリア</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>ピンの傾き設定</h2>
+
+        <div class="field">
+          <div class="field-label">
+            <span class="name">内外傾（外傾 + ＝ピン上部が艇の外側／内傾 − ＝中心線側）</span>
+            <span class="value-readout" id="lateralVal">0.0°</span>
+          </div>
+          <input type="range" id="lateral" min="-3" max="3" step="0.1" value="1.0">
+          <div class="scale-labels"><span>内傾 −3°（中心線側）</span><span>0</span><span>外傾 +3°（艇の外側）</span></div>
+          <svg id="lateralDiagram" viewBox="0 0 260 100" style="width:100%;height:auto;margin-top:8px;"></svg>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <span class="name">前後傾（後傾 + ＝ピン上部がストローク側／前傾 − ＝バウ側）</span>
+            <span class="value-readout" id="foreaftVal">0.0°</span>
+          </div>
+          <input type="range" id="foreaft" min="-3" max="3" step="0.1" value="0.0">
+          <div class="scale-labels"><span>前傾 −3°（バウ側）</span><span>0</span><span>後傾 +3°（ストローク側）</span></div>
+          <svg id="foreaftDiagram" viewBox="0 0 260 100" style="width:100%;height:auto;margin-top:8px;"></svg>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>振り角（キャッチ／フィニッシュ）</h2>
+        <div class="field">
+          <div class="field-label"><span class="name">艇種の推奨値</span></div>
+          <div class="toggle-row">
+            <div class="toggle-btn active" data-preset="sweep">スイープ</div>
+            <div class="toggle-btn" data-preset="scull">スカル</div>
+            <div class="toggle-btn" data-preset="custom">手動入力</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="angle-inputs">
+            <label>キャッチ角
+              <input type="number" id="catchAngle" value="57" step="1" min="0" max="90">
+            </label>
+            <label>フィニッシュ角
+              <input type="number" id="finishAngle" value="33" step="1" min="0" max="90">
+            </label>
+          </div>
+          <div class="diagram-caption" style="margin-top:10px;">推奨値の目安：スイープ キャッチ55〜58° / フィニッシュ32〜35°、スカル キャッチ60〜65° / フィニッシュ45〜50°（振り角0°＝ミドル、艇の中心線に対して垂直な位置）</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: OUTPUTS -->
+    <div>
+      <div class="readouts">
+        <div class="read-card catch">
+          <div class="pos-label">Catch（バウ側）</div>
+          <div class="angle-label" id="catchAngleLabel">振り角 +57°</div>
+          <div class="pitch-value"><span id="catchPitch">4.0</span><span class="deg">°</span></div>
+          <div class="delta" id="catchDelta">K比 +0.0°</div>
+        </div>
+        <div class="read-card">
+          <div class="pos-label">Middle</div>
+          <div class="angle-label">振り角 0°</div>
+          <div class="pitch-value"><span id="middlePitch">4.0</span><span class="deg">°</span></div>
+          <div class="delta" id="middleDelta">K比 +0.0°</div>
+        </div>
+        <div class="read-card finish">
+          <div class="pos-label">Finish（ストローク側）</div>
+          <div class="angle-label" id="finishAngleLabel">振り角 −33°</div>
+          <div class="pitch-value"><span id="finishPitch">4.0</span><span class="deg">°</span></div>
+          <div class="delta" id="finishDelta">K比 +0.0°</div>
+        </div>
+      </div>
+
+      <div class="panel diagram-panel">
+        <h2>ストローク中のブレードピッチ</h2>
+        <svg id="strokeSvg" viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="diagram-caption">上：艇を上から見たオールの振り角。下：ピッチ角の連続変化（キャッチ→ミドル→フィニッシュ）とブレード断面の傾き。</div>
+      </div>
+
+      <div class="panel">
+        <h2>計算式</h2>
+        <div class="formula-box">
+Pitch(γ) = <span class="hl" id="formulaK">4.0°</span> + <span class="hl2">内外傾</span>×sin(γ) + <span class="hl2">前後傾</span>×cos(γ)
+<br>&nbsp;&nbsp;γ：ミドルを0°、キャッチ側を+、フィニッシュ側を−とした振り角
+<br>&nbsp;&nbsp;<span id="formulaKNote">K = オールロック固有角(4.0°) + ブッシュ調整(0.0°)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ・内外傾：外傾(+)はピン上部が艇の外側（水面側）へ、内傾(−)は中心線側へ傾く設定です。sin(γ)に比例するため、ミドルでの寄与は0、キャッチとフィニッシュで符号が反転します。<br>
+    ・前後傾：後傾(+)はピン上部がストローク側へ、前傾(−)はバウ側へ傾く設定です（通常のオールロックの固有角も後傾方向に付いています）。cos(γ)に比例するため、ミドルで最大の寄与となり、キャッチ・フィニッシュに向かって同符号のまま減衰します。<br>
+    ・本ツールはオールのねじれ・スリーブの削れによる追加ピッチ変化は0と仮定しています。実艇では個体差があるため、ピッチメーターでの実測確認を推奨します。
+  </footer>
+
+</div>
+
+<script>
+const els = {
+  lateral: document.getElementById('lateral'),
+  foreaft: document.getElementById('foreaft'),
+  lateralVal: document.getElementById('lateralVal'),
+  foreaftVal: document.getElementById('foreaftVal'),
+  catchAngle: document.getElementById('catchAngle'),
+  finishAngle: document.getElementById('finishAngle'),
+  catchPitch: document.getElementById('catchPitch'),
+  middlePitch: document.getElementById('middlePitch'),
+  finishPitch: document.getElementById('finishPitch'),
+  catchDelta: document.getElementById('catchDelta'),
+  middleDelta: document.getElementById('middleDelta'),
+  finishDelta: document.getElementById('finishDelta'),
+  catchAngleLabel: document.getElementById('catchAngleLabel'),
+  finishAngleLabel: document.getElementById('finishAngleLabel'),
+  svg: document.getElementById('strokeSvg'),
+  lateralSvg: document.getElementById('lateralDiagram'),
+  foreaftSvg: document.getElementById('foreaftDiagram'),
+  inherentAngle: document.getElementById('inherentAngle'),
+  bushNumber: document.getElementById('bushNumber'),
+  bushAdjLabel: document.getElementById('bushAdjLabel'),
+  theoryFields: document.getElementById('theoryFields'),
+  measuredFields: document.getElementById('measuredFields'),
+  measuredMid: document.getElementById('measuredMid'),
+  registerBaseline: document.getElementById('registerBaseline'),
+  clearBaseline: document.getElementById('clearBaseline'),
+  baselineSummary: document.getElementById('baselineSummary'),
+  fixedSpecText: document.getElementById('fixedSpecText'),
+  formulaK: document.getElementById('formulaK'),
+  formulaKNote: document.getElementById('formulaKNote'),
+};
+
+const presets = {
+  sweep: {catch:57, finish:33},
+  scull: {catch:63, finish:47},
+};
+
+let gateMode = 'theory'; // 'theory' | 'measured'
+let baseline = null; // {L0, F0, M0, K}
+
+// ---- mode toggle: sweep/scull/custom (angle presets) ----
+document.querySelectorAll('.toggle-btn[data-preset]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.toggle-btn[data-preset]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const p = btn.dataset.preset;
+    if(p !== 'custom' && presets[p]){
+      els.catchAngle.value = presets[p].catch;
+      els.finishAngle.value = presets[p].finish;
+    }
+    compute();
+  });
+});
+
+// ---- mode toggle: theory vs measured gate constant ----
+document.querySelectorAll('.toggle-btn[data-mode]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.toggle-btn[data-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    gateMode = btn.dataset.mode;
+    els.theoryFields.style.display = gateMode === 'theory' ? '' : 'none';
+    els.measuredFields.style.display = gateMode === 'measured' ? '' : 'none';
+    compute();
+  });
+});
+
+[els.lateral, els.foreaft, els.catchAngle, els.finishAngle, els.inherentAngle, els.bushNumber].forEach(el=>{
+  el.addEventListener('input', ()=>{
+    if(el === els.catchAngle || el === els.finishAngle){
+      document.querySelectorAll('.toggle-btn[data-preset]').forEach(b=>b.classList.remove('active'));
+      document.querySelector('[data-preset="custom"]').classList.add('active');
+    }
+    compute();
+  });
+});
+
+els.registerBaseline.addEventListener('click', ()=>{
+  const L0 = parseFloat(els.lateral.value);
+  const F0 = parseFloat(els.foreaft.value);
+  const M0 = parseFloat(els.measuredMid.value);
+  const K = M0 - F0;
+  baseline = {L0, F0, M0, K};
+  els.clearBaseline.style.display = '';
+  compute();
+});
+
+els.clearBaseline.addEventListener('click', ()=>{
+  baseline = null;
+  els.clearBaseline.style.display = 'none';
+  compute();
+});
+
+function theoreticalK(){
+  const inherent = parseFloat(els.inherentAngle.value);
+  const bush = parseFloat(els.bushNumber.value);
+  const adj = 4 - bush;
+  els.bushAdjLabel.textContent = `調整 ${fmt(adj)}°`;
+  return inherent + adj;
+}
+
+function currentK(){
+  if(gateMode === 'measured' && baseline) return baseline.K;
+  return theoreticalK();
+}
+
+function pitchAt(gammaDeg, L, F, K){
+  const g = gammaDeg * Math.PI / 180;
+  return K + L*Math.sin(g) + F*Math.cos(g);
+}
+
+function fmt(v){
+  const s = v.toFixed(1);
+  return (v > 0 ? '+' : v === 0 ? '±' : '') + s;
+}
+
+function compute(){
+  const L = parseFloat(els.lateral.value);
+  const F = parseFloat(els.foreaft.value);
+  const thetaC = parseFloat(els.catchAngle.value);
+  const thetaF = parseFloat(els.finishAngle.value);
+  const K = currentK();
+
+  els.lateralVal.textContent = fmt(L) + '°';
+  els.foreaftVal.textContent = fmt(F) + '°';
+
+  const pCatch = pitchAt(thetaC, L, F, K);
+  const pMiddle = pitchAt(0, L, F, K);
+  const pFinish = pitchAt(-thetaF, L, F, K);
+
+  els.catchPitch.textContent = pCatch.toFixed(1);
+  els.middlePitch.textContent = pMiddle.toFixed(1);
+  els.finishPitch.textContent = pFinish.toFixed(1);
+
+  // --- header / formula box ---
+  if(gateMode === 'measured' && baseline){
+    els.fixedSpecText.innerHTML = `実測校正モード：ミドル実測 <b>${baseline.M0.toFixed(1)}°</b>（登録時 内外傾${fmt(baseline.L0)}° / 前後傾${fmt(baseline.F0)}°）<br>
+      実効ゲート角 K = <b>${K.toFixed(1)}°</b><br>
+      オールのねじれ・スリーブ摩耗 <b>考慮なし</b>`;
+    els.formulaKNote.textContent = `K = 実測ミドル(${baseline.M0.toFixed(1)}°) − 前後傾(${fmt(baseline.F0)}°) = ${K.toFixed(1)}°`;
+    els.baselineSummary.innerHTML = `<b style="color:var(--brass)">基準登録済み</b>：内外傾 ${fmt(baseline.L0)}° / 前後傾 ${fmt(baseline.F0)}° 時にミドル実測 ${baseline.M0.toFixed(1)}°`;
+  } else if(gateMode === 'measured' && !baseline){
+    els.fixedSpecText.innerHTML = `実測校正モード：まだ基準未登録（理論値 K=${K.toFixed(1)}° を仮に使用中）<br>
+      オールのねじれ・スリーブ摩耗 <b>考慮なし</b>`;
+    els.formulaKNote.textContent = `K = ${K.toFixed(1)}°（基準未登録のため理論値を使用）`;
+    els.baselineSummary.textContent = '';
+  } else {
+    const inherent = parseFloat(els.inherentAngle.value);
+    const bush = parseFloat(els.bushNumber.value);
+    els.fixedSpecText.innerHTML = `オールロック固有角 <b>${inherent.toFixed(1)}°</b>／ブッシュ <b>${bush}</b>（調整 <b>${fmt(4-bush)}°</b>）<br>
+      実効ゲート角 K = <b>${K.toFixed(1)}°</b><br>
+      オールのねじれ・スリーブ摩耗 <b>考慮なし</b>`;
+    els.formulaKNote.textContent = `K = 固有角(${inherent.toFixed(1)}°) + ブッシュ調整(${fmt(4-bush)}°) = ${K.toFixed(1)}°`;
+  }
+  els.formulaK.textContent = K.toFixed(1) + '°';
+
+  // --- deltas: relative to baseline (measured mode) or relative to K (theory mode) ---
+  if(gateMode === 'measured' && baseline){
+    const basePitch = (gamma)=> baseline.K + baseline.L0*Math.sin(gamma*Math.PI/180) + baseline.F0*Math.cos(gamma*Math.PI/180);
+    els.catchDelta.textContent = `基準比 ${fmt(pCatch - basePitch(thetaC))}°`;
+    els.middleDelta.textContent = `基準比 ${fmt(pMiddle - basePitch(0))}°`;
+    els.finishDelta.textContent = `基準比 ${fmt(pFinish - basePitch(-thetaF))}°`;
+  } else {
+    els.catchDelta.textContent = `K比 ${fmt(pCatch-K)}°`;
+    els.middleDelta.textContent = `K比 ${fmt(pMiddle-K)}°`;
+    els.finishDelta.textContent = `K比 ${fmt(pFinish-K)}°`;
+  }
+
+  els.catchAngleLabel.textContent = `振り角 +${thetaC}°`;
+  els.finishAngleLabel.textContent = `振り角 −${thetaF}°`;
+
+  drawDiagram(L, F, thetaC, thetaF, pCatch, pMiddle, pFinish, K);
+  drawLateralDiagram(L);
+  drawForeaftDiagram(F);
+}
+
+function drawLateralDiagram(L){
+  // Cross-section view, looking from stern toward bow. Boat hull as a shallow U, centerline dashed.
+  const cx = 130, hullY = 78, pinBaseY = 78, pinTopY = 20;
+  const tilt = Math.max(-3, Math.min(3, L)) * 8; // px per degree, exaggerated for visibility
+  const topX = cx + tilt;
+  const svg = `
+    <text x="130" y="14" text-anchor="middle" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1">ストローク側から見た図（艇の断面）</text>
+    <path d="M 40 ${hullY} Q 130 ${hullY+26} 220 ${hullY}" fill="none" stroke="#24384a" stroke-width="2"/>
+    <line x1="130" y1="${hullY+2}" x2="130" y2="${hullY+22}" stroke="#24384a" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>
+    <line x1="${cx}" y1="${pinBaseY}" x2="${topX}" y2="${pinTopY}" stroke="#4fb3a6" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${topX}" cy="${pinTopY}" r="3.5" fill="#4fb3a6"/>
+    <circle cx="${cx}" cy="${pinBaseY}" r="3" fill="#8ca0b3"/>
+    <text x="30" y="${hullY+8}" text-anchor="start" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9">中心線側</text>
+    <text x="230" y="${hullY+8}" text-anchor="end" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9">外側（水面）</text>
+    <text x="${topX}" y="${pinTopY-8}" text-anchor="middle" fill="#4fb3a6" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600">${fmt(L)}°</text>
+  `;
+  els.lateralSvg.innerHTML = svg;
+}
+
+function drawForeaftDiagram(F){
+  // Side profile view. Bow on the left (pointed), stern on the right (flat/transom).
+  const cx = 150, hullY = 74, pinBaseY = 74, pinTopY = 18;
+  const tilt = Math.max(-3, Math.min(3, F)) * 8; // stern(+) tilts right, bow(-) tilts left
+  const topX = cx + tilt;
+  const svg = `
+    <text x="130" y="14" text-anchor="middle" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1">舷側から見た図（艇のプロファイル）</text>
+    <path d="M 20 ${hullY} L 55 ${hullY-10} L 235 ${hullY-10} L 250 ${hullY} L 235 ${hullY+8} L 55 ${hullY+8} Z" fill="none" stroke="#24384a" stroke-width="2"/>
+    <line x1="${cx}" y1="${pinBaseY}" x2="${topX}" y2="${pinTopY}" stroke="#c9974a" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${topX}" cy="${pinTopY}" r="3.5" fill="#c9974a"/>
+    <circle cx="${cx}" cy="${pinBaseY}" r="3" fill="#8ca0b3"/>
+    <text x="30" y="${hullY-16}" text-anchor="start" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9">バウ（前傾側）</text>
+    <text x="245" y="${hullY-16}" text-anchor="end" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="9">ストローク（後傾側）</text>
+    <text x="${topX}" y="${pinTopY-8}" text-anchor="middle" fill="#c9974a" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="600">${fmt(F)}°</text>
+  `;
+  els.foreaftSvg.innerHTML = svg;
+}
+
+function drawDiagram(L, F, thetaC, thetaF, pCatch, pMiddle, pFinish, K){
+  const W = 720, H = 300;
+  const cx = W/2, cy = 78;
+  const R = 150;
+
+  // top-down arc: catch on left(+angle from perpendicular going toward bow-left), finish on right
+  const toXY = (angDeg)=>{
+    // angle measured from the perpendicular (pointing down, "middle"), positive = catch side (toward bow, left)
+    const a = (90 + angDeg) * Math.PI/180; // 0deg-> pointing down (middle)
+    return [cx - R*Math.cos(a)*(-1), cy + R*Math.sin(a)];
+  };
+  // simplify: place three points on an arc, catch left, middle bottom-center, finish right
+  const pinX = cx, pinY = cy;
+  const catchPt = [pinX - R*Math.sin(thetaC*Math.PI/180), pinY + R*Math.cos(thetaC*Math.PI/180)];
+  const midPt = [pinX, pinY + R];
+  const finPt = [pinX + R*Math.sin(thetaF*Math.PI/180), pinY + R*Math.cos(thetaF*Math.PI/180)];
+
+  function arcPath(){
+    // build arc via multiple segments from catch to finish through middle
+    let d = '';
+    const steps = 40;
+    for(let i=0;i<=steps;i++){
+      const t = i/steps;
+      const ang = thetaC - t*(thetaC + thetaF); // from +thetaC to -thetaF
+      const x = pinX - R*Math.sin(ang*Math.PI/180);
+      const y = pinY + R*Math.cos(ang*Math.PI/180);
+      d += (i===0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return d;
+  }
+
+  // pitch curve (lower half of diagram)
+  const chartX0 = 60, chartX1 = W-60, chartY0 = 195, chartY1 = 275;
+  const gMin = -thetaF, gMax = thetaC;
+  const rawVals = [pCatch, pMiddle, pFinish];
+  let pMin = Math.min(...rawVals), pMax = Math.max(...rawVals);
+  if(pMax - pMin < 2){ const mid=(pMax+pMin)/2; pMin = mid-1; pMax = mid+1; }
+  const pad = (pMax-pMin)*0.25;
+  pMin -= pad; pMax += pad;
+  function chartPoint(gamma, pitch){
+    const tx = (gamma - gMin)/(gMax-gMin);
+    const x = chartX0 + tx*(chartX1-chartX0);
+    const ty = (pitch - pMin)/(pMax-pMin);
+    const y = chartY1 - ty*(chartY1-chartY0);
+    return [x,y];
+  }
+  let curve = '';
+  const N = 60;
+  for(let i=0;i<=N;i++){
+    const t = i/N;
+    const gamma = gMax - t*(gMax-gMin);
+    const p = pitchAt(gamma, L, F, K);
+    const [x,y] = chartPoint(gamma, p);
+    curve += (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+  }
+  const [cX,cY] = chartPoint(thetaC, pCatch);
+  const [mX,mY] = chartPoint(0, pMiddle);
+  const [fX,fY] = chartPoint(-thetaF, pFinish);
+
+  function bladeGlyph(x, y, pitchDeg, color, size){
+    // small side-view blade rectangle rotated to represent pitch (visual exaggeration x4)
+    const rot = pitchDeg * 3.2;
+    return `<g transform="translate(${x},${y}) rotate(${rot})">
+      <rect x="${-size*0.55}" y="${-size*0.12}" width="${size*1.1}" height="${size*0.24}" rx="${size*0.05}"
+        fill="none" stroke="${color}" stroke-width="2"/>
+      <line x1="0" y1="${-size*0.12}" x2="0" y2="${size*0.12}" stroke="${color}" stroke-width="1" opacity="0.4"/>
+    </g>`;
+  }
+
+  const svg = `
+  <defs>
+    <linearGradient id="curveGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4fb3a6"/>
+      <stop offset="50%" stop-color="#c9974a"/>
+      <stop offset="100%" stop-color="#e0836b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- top-down oar arc -->
+  <text x="${cx}" y="20" text-anchor="middle" fill="#8ca0b3" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">TOP VIEW — OAR SWEEP ARC</text>
+  <circle cx="${pinX}" cy="${pinY}" r="4" fill="#c9974a"/>
+  <path d="${arcPath()}" fill="none" stroke="#24384a" stroke-width="2"/>
+  <line x1="${pinX}" y1="${pinY}" x2="${catchPt[0]}" y2="${catchPt[1]}" stroke="#4fb3a6" stroke-width="1.4" opacity="0.7"/>
+  <line x1="${pinX}" y1="${pinY}" x2="${midPt[0]}" y2="${midPt[1]}" stroke="#5c7186" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+  <line x1="${pinX}" y1="${pinY}" x2="${finPt[0]}" y2="${finPt[1]}" stroke="#e0836b" stroke-width="1.4" opacity="0.7"/>
+
+  ${bladeGlyph(catchPt[0], catchPt[1], pCatch, '#4fb3a6', 34)}
+  ${bladeGlyph(midPt[0], midPt[1], pMiddle, '#e6edf3', 34)}
+  ${bladeGlyph(finPt[0], finPt[1], pFinish, '#e0836b', 34)}
+
+  <text x="${catchPt[0]}" y="${catchPt[1]-24}" text-anchor="middle" fill="#4fb3a6" font-family="IBM Plex Mono, monospace" font-size="11">CATCH（バウ側）</text>
+  <text x="${midPt[0]}" y="${midPt[1]-24}" text-anchor="middle" fill="#8ca0b3" font-family="IBM Plex Mono, monospace" font-size="11">MIDDLE</text>
+  <text x="${finPt[0]}" y="${finPt[1]-24}" text-anchor="middle" fill="#e0836b" font-family="IBM Plex Mono, monospace" font-size="11">FINISH（ストローク側）</text>
+
+  <!-- pitch curve -->
+  <text x="${chartX0}" y="${chartY0-14}" fill="#8ca0b3" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">PITCH ACROSS THE STROKE</text>
+  <line x1="${chartX0}" y1="${chartY1}" x2="${chartX1}" y2="${chartY1}" stroke="#24384a" stroke-width="1"/>
+  <line x1="${chartX0}" y1="${chartY0}" x2="${chartX0}" y2="${chartY1}" stroke="#24384a" stroke-width="1"/>
+  <path d="${curve}" fill="none" stroke="url(#curveGrad)" stroke-width="2.5"/>
+  <circle cx="${cX}" cy="${cY}" r="4" fill="#4fb3a6"/>
+  <circle cx="${mX}" cy="${mY}" r="4" fill="#e6edf3"/>
+  <circle cx="${fX}" cy="${fY}" r="4" fill="#e0836b"/>
+  <text x="${chartX0-8}" y="${chartY0+4}" text-anchor="end" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="10">${pMax.toFixed(1)}°</text>
+  <text x="${chartX0-8}" y="${chartY1+4}" text-anchor="end" fill="#5c7186" font-family="IBM Plex Mono, monospace" font-size="10">${pMin.toFixed(1)}°</text>
+  `;
+  els.svg.innerHTML = svg;
+}
+
+compute();
+</script>
+</body>
+</html>
